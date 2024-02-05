@@ -11,8 +11,8 @@ void printInBin(int8_t byte) {
 
 void initTemperatureSensor()
 {
-    Board_Init();
-   gpioInit(GPIO3, GPIO_INPUT);
+   Board_Init();
+   gpioInit(DS18B20_PIN, GPIO_INPUT);
 }
 
 void delayUs(unsigned int n) {
@@ -62,7 +62,7 @@ void delayUs(unsigned int n) {
                "nop\n\t"
          );
       if (++count == n) {
-         //gpioToggle(GPIO3); // Sacar;
+         //gpioToggle(DS18B20_PIN); // Sacar;
          //count = 0; // Sacar
          break;
       }
@@ -73,18 +73,18 @@ void delayUs(unsigned int n) {
 uint8_t detectar() {
    uint8_t flag = 0, timeout = 0;;
    // Pulso de reset
-   gpioInit(GPIO3, GPIO_OUTPUT);
-   gpioWrite(GPIO3, LOW);
+   gpioInit(DS18B20_PIN, GPIO_OUTPUT);
+   gpioWrite(DS18B20_PIN, LOW);
    delayUs(DELAY_500US);
    
    // Pulso de presencia
-   gpioConfig(GPIO3, GPIO_INPUT);
-   while(gpioRead(GPIO3) == HIGH && timeout < 20) {
+   gpioConfig(DS18B20_PIN, GPIO_INPUT);
+   while(gpioRead(DS18B20_PIN) == HIGH && timeout < 20) {
       delayUs(DELAY_5US);
       timeout++;
    }
    
-   while(gpioRead(GPIO3) == LOW) {
+   while(gpioRead(DS18B20_PIN) == LOW) {
       flag = 1;
    }
    
@@ -99,17 +99,17 @@ uint8_t detectar() {
 void write_bit(uint8_t bit) {
    if (bit&1) {
       // WRITE 1 SLOT
-      gpioConfig(GPIO3, GPIO_OUTPUT);
-      gpioWrite(GPIO3, LOW);
+      gpioConfig(DS18B20_PIN, GPIO_OUTPUT);
+      gpioWrite(DS18B20_PIN, LOW);
       delayUs(DELAY_5US);
-      gpioConfig(GPIO3, GPIO_INPUT);
+      gpioConfig(DS18B20_PIN, GPIO_INPUT);
       delayUs(DELAY_80US);
    } else {
       // WRITE 0 SLOT
-      gpioConfig(GPIO3, GPIO_OUTPUT);
-      gpioWrite(GPIO3, LOW);
+      gpioConfig(DS18B20_PIN, GPIO_OUTPUT);
+      gpioWrite(DS18B20_PIN, LOW);
       delayUs(DELAY_80US);
-      gpioConfig(GPIO3, GPIO_INPUT);
+      gpioConfig(DS18B20_PIN, GPIO_INPUT);
       delayUs(DELAY_5US);
    }
 }
@@ -125,13 +125,13 @@ void write(uint8_t byte) {
 uint8_t read_bit() {
    uint8_t bit;
    
-   gpioConfig(GPIO3, GPIO_OUTPUT);
-   gpioWrite(GPIO3, LOW);
+   gpioConfig(DS18B20_PIN, GPIO_OUTPUT);
+   gpioWrite(DS18B20_PIN, LOW);
    delayUs(DELAY_2US);
    
-   gpioConfig(GPIO3, GPIO_INPUT);
+   gpioConfig(DS18B20_PIN, GPIO_INPUT);
    delayUs(DELAY_5US);
-   bit = gpioRead(GPIO3);
+   bit = gpioRead(DS18B20_PIN);
    
    delayUs(DELAY_80US);
    
@@ -168,7 +168,7 @@ float leerTemperatura() {
    write(0x44); // Convert T
    
    // Wait for conversion
-   while (gpioRead(GPIO3) == LOW) {
+   while (gpioRead(DS18B20_PIN) == LOW) {
       //printf("Convirtiendo...\r\n");
    }
    

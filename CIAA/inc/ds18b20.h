@@ -15,6 +15,7 @@ extern "C" {
 #define DELAY_100US 400
 #define DELAY_400US 1600
 #define DELAY_500US 2000
+#define DS18B20_PIN GPIO5
 
 /* --------------------- PROTOTYPES --------------------- */
 
