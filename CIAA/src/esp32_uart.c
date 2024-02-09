@@ -8,8 +8,8 @@ void rxComando ( void *params )
    uint8_t data = msg & 0b01111111;
    switch (msg >> 7) {
       case UART_COM_TEMP:
-         temperatura_objetivo = (float) data;
-         printf("Se cambio la temperatura a: %d\r\n", temperatura_objetivo);
+         temperatura_objetivo = data;
+         printf("Se cambio la temperatura a: %.2f\r\n", temperatura_objetivo);
       break;
       case UART_COM_NIVEL:
          nivel = (data == 0) ? NivelBajo: ( (data == 1)? NivelMedio : NivelAlto );
@@ -29,7 +29,7 @@ void configurarUART() {
 
 void sendDatos() {
    uartWriteByte(UART_232, 0xFF);
-   uartWriteByte(UART_232, temperatura_objetivo);
+   uartWriteByte(UART_232, (int) temperatura);
    uartWriteByte(UART_232, nivel);
    uartWriteByte(UART_232, estado);
 }

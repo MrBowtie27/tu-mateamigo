@@ -13,11 +13,11 @@
 #define APAGAR_BOMBA gpioWrite(ElectroValvula,HIGH)
 
 #define TEMP_DIFF_THRESHOLD_HEAT 5
-#define TEMP_DIFF_THRESHOLD_MANTAIN 1
+#define TEMP_DIFF_THRESHOLD_MANTAIN 2
 
 state estado;
 
-float temperatura = 0, temperatura_objetivo = 60;
+float temperatura = 0, temperatura_objetivo = 35;
 Nivel nivel;
 
 float distanceInCms;
@@ -36,12 +36,15 @@ void actualizarCalentamiento() {
    // Medir temperatura
    temperatura = leerTemperatura();
    printf("Temperatura: %.2f \r\n", temperatura);
+   
+   if (estado != Calentando) {
 
-   // Activar  o desactivar calentador segun corresponda
-   if (temperatura < temperatura_objetivo - TEMP_DIFF_THRESHOLD_MANTAIN)
-      ENCENDER_CALENTADOR;
-   else
-      APAGAR_CALENTADOR;
+      // Activar  o desactivar calentador segun corresponda
+      if (temperatura < temperatura_objetivo - TEMP_DIFF_THRESHOLD_MANTAIN)
+         ENCENDER_CALENTADOR;
+      else
+         APAGAR_CALENTADOR;
+   }
 }
 
 void ActualizarMEF(void)
@@ -52,6 +55,7 @@ void ActualizarMEF(void)
 
          if (temperatura < temperatura_objetivo - TEMP_DIFF_THRESHOLD_HEAT) {
             estado = Calentando;
+            ENCENDER_CALENTADOR;
             break;
          }
 
@@ -66,6 +70,7 @@ void ActualizarMEF(void)
       case Calentando:
          printf("Calentando - ");
          if(temperatura >= temperatura_objetivo) {
+            APAGAR_CALENTADOR;
             estado = Default;
          }
       break;
@@ -104,8 +109,11 @@ void ActualizarMEF(void)
          printf("Distance (Retiro): %.2f mm\r\n", distanceInCms*10);
          if (distanceInCms*10 > 40) //Si no detecto el mate cambio de estado
              DetectoRetiro = 1;
-         if(DetectoRetiro)
-         {  DetectoRetiro = 0;estado=Default;}
+         if(DetectoRetiro) {
+            DetectoRetiro = 0;
+            estado = Default;
+            delay(500);
+         }
       break;
    }
 }
@@ -118,6 +126,7 @@ int main( void )
    initTemperatureSensor();
    delay(2000);
    ultrasonicSensorConfig( ULTRASONIC_SENSOR_0, ULTRASONIC_SENSOR_ENABLE );
+   configurarUART();
    delay(100);
 
    Iniciar_MEF();
@@ -126,8 +135,10 @@ int main( void )
 
    // ---------- REPETIR POR SIEMPRE --------------------------
    while(1) {
+      //temperatura = leerTemperatura();
       ActualizarMEF();
       actualizarCalentamiento();
+      sendDatos();
       delay(200);
    }
 

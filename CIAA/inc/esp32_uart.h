@@ -14,4 +14,7 @@ extern state estado;
 extern float temperatura, temperatura_objetivo;
 extern Nivel nivel;
 
+void configurarUART();
+void sendDatos();
+
 #endif

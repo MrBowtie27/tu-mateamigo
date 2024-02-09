@@ -7,12 +7,15 @@ WiFiServer server(80);
 
 //---------------------Credenciales de WiFi-----------------------
 
-const char* ssid     = "Agus";
-const char* password = "agusselacome";
+const char* ssid     = "Fibertel WiFi702 2.4GHz";
+const char* password = "00414463470";
 
 //---------------------VARIABLES GLOBALES-------------------------
 #define ESTADO_LISTO 0
 #define ESTADO_CALENTANDO 1
+#define ESTADO_DETECCION 2
+#define ESTADO_SIRVIENDO 3
+#define ESTADO_RETIRO 4
 
 int contconexion = 0;
 
@@ -45,6 +48,8 @@ String home_1 = "<!DOCTYPE html>"
 "<html lang='es'>"
 "<head>"
 "    <meta charset='UTF-8'>"
+//recargar la pagina cada 5 segundos por el feedback
+" <meta http-equiv='refresh' content='5'> "
 "    <meta name='viewport' content='width=device-width, initial-scale=1.0'>"
 "    <title>Tu MateAmigo</title>"
 "    <link rel='stylesheet' href='https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200' />"
@@ -222,8 +227,8 @@ String pagina = ind;
 #define SET_TEMPERATURA 0
 #define SET_NIVEL 1
 
-void sendCommand(char command, int data) {
-  char msg = (command << 6) | (data & 0x3F);
+void sendCommand(unsigned char command, unsigned char data) {
+  unsigned char msg = (command << 7) | (data & 0x7F);
   Serial.println("Mandando: " + String((int) msg));
   UART_CIAA.write(msg);
 }
@@ -235,6 +240,15 @@ String getEstado(unsigned int estado) {
       break;
     case ESTADO_CALENTANDO:
       return "Calentando";
+      break;
+    case ESTADO_DETECCION:
+      return "Detectando";
+      break;
+    case ESTADO_SIRVIENDO:
+      return "Sirviendo";
+      break;
+    case ESTADO_RETIRO:
+      return "Retirar mate";
       break;
     default:
       return "ERROR";
@@ -256,6 +270,7 @@ void getData(void* param) {
         Serial.println("Temperatura placa: " + String(temperatura_CIAA));
         while(!UART_CIAA.available());
         nivel_CIAA = UART_CIAA.read();
+        Serial.println("Nivel placa: " + String(nivel_CIAA));
         while(!UART_CIAA.available());
         estado_CIAA = UART_CIAA.read();
         Serial.println("Estado placa " + String(estado_CIAA) + " " + getEstado(estado_CIAA));
@@ -271,7 +286,7 @@ void getData(void* param) {
 void sendData(void* param) {
   while(1) {
     Serial.write("mandando cositas\r\n");
-    sendCommand(SET_TEMPERATURA, temperatura - 40); // piso de 40 grados
+    sendCommand(SET_TEMPERATURA, temperatura); // piso de 40 grados
     sendCommand(SET_NIVEL, nivel);
     vTaskDelay(pdMS_TO_TICKS(2500));
   }
