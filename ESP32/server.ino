@@ -7,8 +7,8 @@ WiFiServer server(80);
 
 //---------------------Credenciales de WiFi-----------------------
 
-const char* ssid     = "Fibertel WiFi702 2.4GHz";
-const char* password = "00414463470";
+const char* ssid     = "Personal-B47-2.4GHz";
+const char* password = "01442842419";
 
 //---------------------VARIABLES GLOBALES-------------------------
 #define ESTADO_LISTO 0
@@ -22,10 +22,13 @@ int contconexion = 0;
 String header; // Variable para guardar el HTTP request
 HardwareSerial UART_CIAA(2);
 
+typedef enum {Index, Config, Home} view_enum;
+view_enum pagina_i;
+
 
 const int salida = 2;
 unsigned int nivel = 1, nivel_CIAA;
-unsigned int temperatura = 80, temperatura_CIAA;
+unsigned int temperatura = 35, temperatura_CIAA;
 unsigned int estado_CIAA = ESTADO_LISTO;
 int cargas;
 
@@ -49,7 +52,7 @@ String home_1 = "<!DOCTYPE html>"
 "<head>"
 "    <meta charset='UTF-8'>"
 //recargar la pagina cada 5 segundos por el feedback
-" <meta http-equiv='refresh' content='5'> "
+" <meta http-equiv='refresh' content='0.5'> "
 "    <meta name='viewport' content='width=device-width, initial-scale=1.0'>"
 "    <title>Tu MateAmigo</title>"
 "    <link rel='stylesheet' href='https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200' />"
@@ -175,6 +178,7 @@ String config = "<!DOCTYPE html>"
 "        function enviarParametros() {\n"
 "            var valorNumero = document.getElementById('numeroInput').value;\n"
 "            var radios = document.getElementsByName('nivel');\n"
+"            var nivel = null;"
 "             if(valorNumero>80 || valorNumero<30) {"
 "             alert('Esa temperatura no esta permitida');"
 "             return false;}"
@@ -185,12 +189,17 @@ String config = "<!DOCTYPE html>"
 "            }"
 "            }"
 "            // Construye la URL con los parámetros \n"
-"            var url = '/index?' + "
+"            if (nivel != null) {"
+"             var url = '/index?' + "
 "                        'numeroInput=' + valorNumero + "
 "                        '&nivel=' + nivel ;\n"
+"            } else {"
+"             var url = '/index?' + "
+"                        'numeroInput=' + valorNumero;\n"
+"            }"
+"            window.location.href = url;\n"
+"          }\n"
 ""
-"            window.location.href = url\n;"
-"          }"
 "      </script>"
 "<div class='container'>"
 "<p><a onclick='enviarParametros()'><button class='volver-btn'>Volver</button></a></p>"
@@ -209,15 +218,15 @@ String config = "<!DOCTYPE html>"
 "<div class='row'>"
 "    <div>"
 "        <label class='form-check-inline'>"
-"           <input type='radio' id='nivel1' value='1'>Nivel 1"
+"           <input type='radio' name='nivel' id='1'>Nivel 1"
 "        </label>"
 "       "
 "       <label class='form-check-inline'>"
-"           <input type='radio' id='nivel2' value='2'>Nivel 2"
+"           <input type='radio' name='nivel' id='2'>Nivel 2"
 "       </label>"
 "       "
 "       <label class='form-check-inline'>"
-"          <input type='radio' id='nivel3' value='3'>Nivel 3"
+"          <input type='radio' name='nivel' id='3'>Nivel 3"
 "        </label>"
 "    </div>"
 "</div>"
@@ -234,7 +243,7 @@ String pagina = ind;
 
 void sendCommand(unsigned char command, unsigned char data) {
   unsigned char msg = (command << 7) | (data & 0x7F);
-  Serial.println("Mandando: " + String((int) msg));
+  //Serial.println("Mandando: " + String((int) msg));
   UART_CIAA.write(msg);
 }
 
@@ -266,23 +275,23 @@ String getEstado(unsigned int estado) {
 // en Arduino IDE
 void getData(void* param) {
   while(1) {
-  Serial.write("Recibiendo cositas\r\n");
+  //Serial.write("Recibiendo cositas\r\n");
     while (UART_CIAA.available()) {
       char data = UART_CIAA.read();
       if (data == 0xFF) {
         while(!UART_CIAA.available());
         temperatura_CIAA = UART_CIAA.read();
-        Serial.println("Temperatura placa: " + String(temperatura_CIAA));
+        //Serial.println("Temperatura placa: " + String(temperatura_CIAA));
         while(!UART_CIAA.available());
         nivel_CIAA = UART_CIAA.read();
-        Serial.println("Nivel placa: " + String(nivel_CIAA));
+        //Serial.println("Nivel placa: " + String(nivel_CIAA));
         while(!UART_CIAA.available());
         estado_CIAA = UART_CIAA.read();
-        Serial.println("Estado placa " + String(estado_CIAA) + " " + getEstado(estado_CIAA));
+        //Serial.println("Estado placa " + String(estado_CIAA) + " " + getEstado(estado_CIAA));
       }
     }
 
-    vTaskDelay(pdMS_TO_TICKS(2000));
+    vTaskDelay(pdMS_TO_TICKS(150));
   }
 }
 
@@ -290,8 +299,8 @@ void getData(void* param) {
 // para que la placa y el esp esten sincronizados
 void sendData(void* param) {
   while(1) {
-    Serial.write("mandando cositas\r\n");
-    sendCommand(SET_TEMPERATURA, temperatura); // piso de 40 grados
+    //Serial.write("mandando cositas\r\n");
+    sendCommand(SET_TEMPERATURA, temperatura);
     sendCommand(SET_NIVEL, nivel);
     vTaskDelay(pdMS_TO_TICKS(2500));
   }
@@ -299,9 +308,9 @@ void sendData(void* param) {
 
 //---------------------------SETUP--------------------------------
 void setup() {
-  Serial.begin(115200);
+  //Serial.begin(115200);
   UART_CIAA.begin(9600, SERIAL_8N1, 16, 17); // Setup de conexion con EDU-CIAA
-  Serial.println("");
+  //Serial.println("");
   
   pinMode(salida, OUTPUT); 
   digitalWrite(salida, LOW);
@@ -312,23 +321,23 @@ void setup() {
   while (WiFi.status() != WL_CONNECTED and contconexion <50) { 
     ++contconexion;
     delay(500);
-    Serial.print(".");
+    //Serial.print(".");
   }
   if (contconexion <50) {
       //para usar con ip fija
-      //IPAddress ip(192,168,1,180); 
-      //IPAddress gateway(192,168,1,1); 
-      //IPAddress subnet(255,255,255,0); 
-      //WiFi.config(ip, gateway, subnet); 
+      IPAddress ip(192,168,0,222); 
+      IPAddress gateway(192,168,0,1); 
+      IPAddress subnet(255,255,255,0); 
+      WiFi.config(ip, gateway, subnet); 
       
-      Serial.println("");
-      Serial.println("WiFi conectado");
-      Serial.println(WiFi.localIP());
+      //Serial.println("");
+      //Serial.println("WiFi conectado");
+      //Serial.println(WiFi.localIP());
       server.begin(); // iniciamos el servidor
   }
   else { 
-      Serial.println("");
-      Serial.println("Error de conexion");
+      //Serial.println("");
+      //Serial.println("Error de conexion");
   }
 
   // Crear tasks de UART
@@ -344,18 +353,18 @@ void loop(){
 
 
   if (client) {                             // Si se conecta un nuevo cliente
-    Serial.println("New Client.");          // 
+    //Serial.println("New Client.");          // 
     String currentLine = "";                //
     while (client.connected()) {            // loop mientras el cliente está conectado
       if (client.available()) {             // si hay bytes para leer desde el cliente
         char c = client.read();             // lee un byte
-        Serial.write(c);                    // imprime ese byte en el monitor serial
+        //Serial.write(c);                    // imprime ese byte en el monitor serial
         header += c;
         if (c == '\n') {                    // si el byte es un caracter de salto de linea
           // si la nueva linea está en blanco significa que es el fin del 
           // HTTP request del cliente, entonces respondemos:
           if (currentLine.length() == 0) {
-            Serial.println(header);
+            //Serial.println(header);
             client.println("HTTP/1.1 200 OK");
             client.println("Content-type:text/html");
             client.println("Connection: close");
@@ -378,20 +387,26 @@ void loop(){
                                 "</body>"
                                 "</html>";
               pagina = home_1 + home_2;
+              pagina_i = Home;
             } else if (header.indexOf("GET /config") >= 0) {
               pagina = config;
+              pagina_i = Config;
             } else if (header.indexOf("GET /index") >= 0) {
-              if (pagina == config) {
+              if (pagina_i == Config) {
                 // interpretar parámetos
                 temperatura = header.substring(23,25).toInt();
-                Serial.println("Temperatura cambiada a " + String(temperatura));
+                //Serial.println("Temperatura cambiada a " + String(temperatura));
                 String n;
-                n = header.substring(header.indexOf('&nivel='),header.indexOf("HTTP")-1);
-                Serial.println(temperatura);
-                nivel = n.toInt();
-                Serial.println("Nivel cambiado a " + String(nivel));
+                uint32_t indexNivel = header.indexOf('&nivel=');
+                if (indexNivel > 0) {
+                  n = header.substring(indexNivel, header.indexOf("HTTP")-1);
+                  //Serial.println(temperatura);
+                  nivel = n.toInt();
+                  //Serial.println("Nivel cambiado a " + String(nivel));
+                }
               }
               pagina = ind;
+              pagina_i = Index;
 
             }
           }
@@ -414,7 +429,7 @@ void loop(){
     header = "";
     // Cerramos la conexión
     client.stop();
-    Serial.println("Client disconnected.");
-    Serial.println("");
+    //Serial.println("Client disconnected.");
+    //Serial.println("");
   }
 }

@@ -12,7 +12,7 @@ void rxComando ( void *params )
          printf("Se cambio la temperatura a: %.2f\r\n", temperatura_objetivo);
       break;
       case UART_COM_NIVEL:
-         nivel = (data == 0) ? NivelBajo: ( (data == 1)? NivelMedio : NivelAlto );
+         nivel = (data == 1) ? NivelBajo: ( (data == 2)? NivelMedio : NivelAlto );
          printf("Se cambio el nivel a: %d\r\n", nivel);
       break;
    }

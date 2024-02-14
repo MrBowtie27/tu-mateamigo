@@ -12,7 +12,7 @@
 #define ENCENDER_BOMBA gpioWrite(ElectroValvula,LOW)
 #define APAGAR_BOMBA gpioWrite(ElectroValvula,HIGH)
 
-#define TEMP_DIFF_THRESHOLD_HEAT 5
+#define TEMP_DIFF_THRESHOLD_HEAT 6
 #define TEMP_DIFF_THRESHOLD_MANTAIN 2
 
 state estado;
@@ -27,24 +27,47 @@ void Iniciar_MEF(){
    estado = Default;
 }
 
+void actualizarCalentamiento() {
+   static uint8_t calentandoBool = 0;
+   // Medir temperatura
+   temperatura = leerTemperatura();
+   printf("Temperatura: %.2f \r\n", temperatura);
+   
+   /*if (estado != Calentando) {
+      // Activar  o desactivar calentador segun corresponda
+      if (calentandoBool == 0){
+         if (temperatura < temperatura_objetivo - TEMP_DIFF_THRESHOLD_MANTAIN) {
+            calentandoBool = 1;
+            ENCENDER_CALENTADOR;
+         }
+      }
+      else {
+         if (temperatura >= temperatura_objetivo) {
+            calentandoBool = 0;
+            APAGAR_CALENTADOR;
+         }
+      }
+   }*/
+}
+
 void Pin_Init(){
    gpioInit(ElectroValvula, GPIO_OUTPUT);
    gpioInit(CalentadorAgua, GPIO_OUTPUT);
 }
 
-void actualizarCalentamiento() {
-   // Medir temperatura
-   temperatura = leerTemperatura();
-   printf("Temperatura: %.2f \r\n", temperatura);
+void timerInterrupt(void* params) {
+   static volatile uint8_t cont = 0;
    
-   if (estado != Calentando) {
-
-      // Activar  o desactivar calentador segun corresponda
-      if (temperatura < temperatura_objetivo - TEMP_DIFF_THRESHOLD_MANTAIN)
-         ENCENDER_CALENTADOR;
-      else
-         APAGAR_CALENTADOR;
+   // Actualizar sistema de calentamiento cada 2 interrupciones (100ms a tick de 50ms)
+   if (cont%2 == 0) {
+      actualizarCalentamiento();
    }
+
+   // Actualizar sistema de calentamiento cada 3 interrupciones (150ms a tick de 50ms)
+   if (cont%3 == 0) {
+      sendDatos();
+   }
+   cont = (cont + 1)%200; // Resetear cada 200 interrupciones
 }
 
 void ActualizarMEF(void)
@@ -55,7 +78,7 @@ void ActualizarMEF(void)
 
          if (temperatura < temperatura_objetivo - TEMP_DIFF_THRESHOLD_HEAT) {
             estado = Calentando;
-            ENCENDER_CALENTADOR;
+            //ENCENDER_CALENTADOR;
             break;
          }
 
@@ -84,6 +107,7 @@ void ActualizarMEF(void)
             { ConfirmoDeteccion = 0; estado=Sirviendo;}
          else
             { estado=Default;}
+            
       break;
 
       case Sirviendo:
@@ -108,9 +132,9 @@ void ActualizarMEF(void)
          distanceInCms = ultrasonicSensorGetDistance(ULTRASONIC_SENSOR_0, CM);
          printf("Distance (Retiro): %.2f mm\r\n", distanceInCms*10);
          if (distanceInCms*10 > 40) //Si no detecto el mate cambio de estado
-             DetectoRetiro = 1;
-         if(DetectoRetiro) {
-            DetectoRetiro = 0;
+            DetectoRetiro = 1; // Sacar
+         if(DetectoRetiro) { // Sacar
+            DetectoRetiro = 0; // Sacar
             estado = Default;
             delay(500);
          }
@@ -123,22 +147,27 @@ int main( void )
    boardConfig();
    uartConfig( UART_USB, 115200 ); // Inicializar periferico UART_USB
 
+   // Inicializacion de sensores
    initTemperatureSensor();
    delay(2000);
    ultrasonicSensorConfig( ULTRASONIC_SENSOR_0, ULTRASONIC_SENSOR_ENABLE );
    configurarUART();
+
+   // Configurar interrupcion de timer cada 50 ms
+   tickConfig(50);
+   tickCallbackSet( &timerInterrupt, NULL );
+
    delay(100);
 
    Iniciar_MEF();
    Pin_Init();
-   APAGAR_CALENTADOR;
+   //APAGAR_CALENTADOR;
+   APAGAR_BOMBA;
 
    // ---------- REPETIR POR SIEMPRE --------------------------
    while(1) {
       //temperatura = leerTemperatura();
       ActualizarMEF();
-      actualizarCalentamiento();
-      sendDatos();
       delay(200);
    }
 
