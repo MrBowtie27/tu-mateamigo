@@ -174,17 +174,20 @@ String config = "<!DOCTYPE html>"
 "    <script>"
 "        function enviarParametros() {\n"
 "            var valorNumero = document.getElementById('numeroInput').value;\n"
-"            var opcion1 = document.getElementById('nivel1').checked;\n"
-"            var opcion2 = document.getElementById('nivel2').checked;\n"
-"            var opcion3 = document.getElementById('nivel3').checked;\n"
-"  "
-"            var url = '/index?' +"
-"                      'numeroInput=' + valorNumero +"
-"                      '&opcion1=' + opcion1 +"
-"                      '&opcion2=' + opcion2 +"
-"                      '&opcion3=' + opcion3;"
-" "
-"            window.location.href = url;\n"
+"            var radios = document.getElementsByName('nivel');\n"
+""
+"            for (var i = 0; i < radios.length; i++) {"
+"            if (radios[i].checked) {"
+"                nivel = radios[i].id;"
+"                break;"
+"            }"
+"            }"
+"            // Construye la URL con los parámetros \n"
+"            var url = '/index?' + "
+"                        'numeroInput=' + valorNumero + "
+"                        '&nivel=' + nivel ;\n"
+""
+"            window.location.href = url\n;"
 "          }"
 "      </script>"
 "<div class='container'>"
@@ -380,16 +383,10 @@ void loop(){
                 // interpretar parámetos
                 temperatura = header.substring(23,25).toInt();
                 Serial.println("Temperatura cambiada a " + String(temperatura));
-                String n1, n2, n3;
-                n1 = header.substring(header.indexOf('&opcion1'),header.indexOf("&opcion2"));
-                n2 = header.substring(header.indexOf('&opcion2'),header.indexOf("&opcion3"));
-                n3 = header.substring(header.indexOf('&opcion3'),header.indexOf("HTTP")-1);
+                String n;
+                n = header.substring(header.indexOf('&nivel='),header.indexOf("HTTP")-1);
                 Serial.println(temperatura);
-                if(n1=="1=true") {
-                  nivel = 1;
-                } else if(n2=="2=true") {
-                  nivel = 2;
-                } else nivel = 3;
+                nivel = n.toInt();
                 Serial.println("Nivel cambiado a " + String(nivel));
               }
               pagina = ind;
