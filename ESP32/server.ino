@@ -7,8 +7,8 @@ WiFiServer server(80);
 
 //---------------------Credenciales de WiFi-----------------------
 
-const char* ssid     = "Personal-B47-2.4GHz";
-const char* password = "01442842419";
+const char* ssid     = "Agus";
+const char* password = "agusselacome";
 
 //---------------------VARIABLES GLOBALES-------------------------
 #define ESTADO_LISTO 0
@@ -51,8 +51,7 @@ String home_1 = "<!DOCTYPE html>"
 "<html lang='es'>"
 "<head>"
 "    <meta charset='UTF-8'>"
-//recargar la pagina cada 5 segundos por el feedback
-" <meta http-equiv='refresh' content='0.5'> "
+
 "    <meta name='viewport' content='width=device-width, initial-scale=1.0'>"
 "    <title>Tu MateAmigo</title>"
 "    <link rel='stylesheet' href='https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200' />"
@@ -243,7 +242,7 @@ String pagina = ind;
 
 void sendCommand(unsigned char command, unsigned char data) {
   unsigned char msg = (command << 7) | (data & 0x7F);
-  //Serial.println("Mandando: " + String((int) msg));
+  Serial.println("Mandando: " + String((int) msg));
   UART_CIAA.write(msg);
 }
 
@@ -291,7 +290,7 @@ void getData(void* param) {
       }
     }
 
-    vTaskDelay(pdMS_TO_TICKS(150));
+    vTaskDelay(pdMS_TO_TICKS(1200));
   }
 }
 
@@ -302,13 +301,13 @@ void sendData(void* param) {
     //Serial.write("mandando cositas\r\n");
     sendCommand(SET_TEMPERATURA, temperatura);
     sendCommand(SET_NIVEL, nivel);
-    vTaskDelay(pdMS_TO_TICKS(2500));
+    vTaskDelay(pdMS_TO_TICKS(2000));
   }
 }
 
 //---------------------------SETUP--------------------------------
 void setup() {
-  //Serial.begin(115200);
+  Serial.begin(115200);
   UART_CIAA.begin(9600, SERIAL_8N1, 16, 17); // Setup de conexion con EDU-CIAA
   //Serial.println("");
   
@@ -325,10 +324,10 @@ void setup() {
   }
   if (contconexion <50) {
       //para usar con ip fija
-      IPAddress ip(192,168,0,222); 
-      IPAddress gateway(192,168,0,1); 
-      IPAddress subnet(255,255,255,0); 
-      WiFi.config(ip, gateway, subnet); 
+      //IPAddress ip(192,4,0,165); 
+      //IPAddress gateway(192,4,0,1); 
+      //IPAddress subnet(255,255,255,0); 
+      //WiFi.config(ip, gateway, subnet); 
       
       //Serial.println("");
       //Serial.println("WiFi conectado");
@@ -380,7 +379,7 @@ void loop(){
                                 "    <div class='row'>"
                                 "        <div><svg xmlns='http://www.w3.org/2000/svg' height='24' viewBox='0 -960 960 960' width='24'><path d='M419-80q-28 0-52.5-12T325-126L107-403l19-20q20-21 48-25t52 11l74 45v-328q0-17 11.5-28.5T340-760q17 0 29 11.5t12 28.5v472l-97-60 104 133q6 7 14 11t17 4h221q33 0 56.5-23.5T720-240v-160q0-17-11.5-28.5T680-440H461v-80h219q50 0 85 35t35 85v160q0 66-47 113T640-80H419ZM167-620q-13-22-20-47.5t-7-52.5q0-83 58.5-141.5T340-920q83 0 141.5 58.5T540-720q0 27-7 52.5T513-620l-69-40q8-14 12-28.5t4-31.5q0-50-35-85t-85-35q-50 0-85 35t-35 85q0 17 4 31.5t12 28.5l-69 40Zm335 280Zm-40 80q-17 0-28.5-11.5T280-120v-640q0-17 11.5-28.5T320-800h80v-80h160v80h80q17 0 28.5 11.5T680-760v280q-21 0-41 3.5T600-466v-254H360v560h94q8 23 19.5 43T501-80H320Z'/></svg></div>"
                                 "        <div>Nivel seleccionado</div>"
-                                "        <div class='square'>" + String(nivel_CIAA) + "</div>"
+                                "        <div class='square'>" + String(nivel_CIAA + 1) + "</div>"
                                 "    </div>"
                                 "    <div id='miCajaTexto' contenteditable='true'>" + getEstado(estado_CIAA)+ "</div>"
                                 "</div>"
@@ -395,14 +394,15 @@ void loop(){
               if (pagina_i == Config) {
                 // interpretar parámetos
                 temperatura = header.substring(23,25).toInt();
-                //Serial.println("Temperatura cambiada a " + String(temperatura));
+                Serial.println("Temperatura cambiada a " + String(temperatura));
                 String n;
-                uint32_t indexNivel = header.indexOf('&nivel=');
+                uint32_t indexNivel = header.indexOf("&nivel=");
                 if (indexNivel > 0) {
-                  n = header.substring(indexNivel, header.indexOf("HTTP")-1);
+                  n = header.substring(indexNivel+7, header.indexOf("HTTP")-1);
+                  Serial.println(n);
                   //Serial.println(temperatura);
                   nivel = n.toInt();
-                  //Serial.println("Nivel cambiado a " + String(nivel));
+                  Serial.println("Nivel cambiado a " + String(nivel));
                 }
               }
               pagina = ind;
