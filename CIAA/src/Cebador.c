@@ -12,12 +12,12 @@
 #define ENCENDER_BOMBA gpioWrite(ElectroValvula,LOW)
 #define APAGAR_BOMBA gpioWrite(ElectroValvula,HIGH)
 
-#define TEMP_DIFF_THRESHOLD_HEAT 6
-#define TEMP_DIFF_THRESHOLD_MANTAIN 2
+#define TEMP_DIFF_THRESHOLD_HEAT 0
+#define TEMP_DIFF_THRESHOLD_MANTAIN 0
 
 state estado;
 
-float temperatura = 0, temperatura_objetivo = 35;
+float temperatura = 0, temperatura_objetivo = 30;
 Nivel nivel;
 
 float distanceInCms;
@@ -29,25 +29,36 @@ void Iniciar_MEF(){
 
 void actualizarCalentamiento() {
    static uint8_t calentandoBool = 0;
+   static uint8_t prevenirHisteresis = 0;
+   static uint8_t contHisteresis = 0;
    // Medir temperatura
    temperatura = leerTemperatura();
    printf("Temperatura: %.2f \r\n", temperatura);
    
-   /*if (estado != Calentando) {
-      // Activar  o desactivar calentador segun corresponda
-      if (calentandoBool == 0){
-         if (temperatura < temperatura_objetivo - TEMP_DIFF_THRESHOLD_MANTAIN) {
-            calentandoBool = 1;
-            ENCENDER_CALENTADOR;
+   if (prevenirHisteresis && contHisteresis < 40) {
+      contHisteresis++;
+   } else {
+      if (estado != Calentando) {
+         // Activar  o desactivar calentador segun corresponda
+         if (calentandoBool == 0){
+            if (temperatura < temperatura_objetivo - TEMP_DIFF_THRESHOLD_MANTAIN) {
+               calentandoBool = 1;
+               ENCENDER_CALENTADOR;
+               prevenirHisteresis = 1;
+               contHisteresis = 0;
+
+            }
+         }
+         else {
+            if (temperatura >= temperatura_objetivo) {
+               calentandoBool = 0;
+               APAGAR_CALENTADOR;
+               prevenirHisteresis = 1;
+               contHisteresis = 0;
+            }
          }
       }
-      else {
-         if (temperatura >= temperatura_objetivo) {
-            calentandoBool = 0;
-            APAGAR_CALENTADOR;
-         }
-      }
-   }*/
+   }
 }
 
 void Pin_Init(){
@@ -161,12 +172,11 @@ int main( void )
 
    Iniciar_MEF();
    Pin_Init();
-   //APAGAR_CALENTADOR;
+   APAGAR_CALENTADOR;
    APAGAR_BOMBA;
 
    // ---------- REPETIR POR SIEMPRE --------------------------
    while(1) {
-      //temperatura = leerTemperatura();
       ActualizarMEF();
       delay(200);
    }
